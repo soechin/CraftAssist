@@ -21,9 +21,36 @@ public class OpenRouterClient {
     private static final String API_URL = "https://openrouter.ai/api/v1/chat/completions";
     private static final Gson GSON = new Gson();
 
-    public static CompletableFuture<BuildStructure> generate(String description, ModConfig config) {
-        String systemPrompt = PromptBuilder.buildSystemPrompt(config.getMaxBlocks());
+    /**
+     * 第一階段：創意規劃（回傳純文字藍圖）
+     */
+    public static CompletableFuture<String> generatePlan(String description, ModConfig config) {
+        String systemPrompt = PromptBuilder.buildPlanningPrompt();
 
+        String userPrompt = "Build: " + description;
+
+        CraftAssistMod.LOGGER.debug("[CraftAssist] 第一階段 API 請求 | 模型: {} | 描述: {}", config.getModel(), description);
+
+        return sendRequest(systemPrompt, userPrompt, config, false, "第一階段")
+                .thenApply(body -> parseTextResponse(body, "第一階段"));
+    }
+
+    /**
+     * 第二階段：完整建築生成（回傳建築 JSON）
+     */
+    public static CompletableFuture<BuildStructure> generateBuilding(String blueprint, ModConfig config) {
+        String systemPrompt = PromptBuilder.buildBuildingPrompt(blueprint, config.getMaxBlocks());
+
+        String userPrompt = "Generate the complete building JSON following the blueprint above.";
+
+        CraftAssistMod.LOGGER.debug("[CraftAssist] 第二階段 API 請求 | 模型: {}", config.getModel());
+
+        return sendRequest(systemPrompt, userPrompt, config, true, "第二階段")
+                .thenApply(body -> parseBuildResponse(body, "第二階段"));
+    }
+
+    private static CompletableFuture<String> sendRequest(String systemPrompt, String userPrompt,
+                                                         ModConfig config, boolean jsonFormat, String stage) {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("model", config.getModel());
 
@@ -36,24 +63,16 @@ public class OpenRouterClient {
 
         JsonObject userMsg = new JsonObject();
         userMsg.addProperty("role", "user");
-        String userPrompt = """
-                Build: %s
-
-                Expand this idea creatively. Go beyond what was described:
-                - Imagine what would make this build feel complete and lived-in
-                - Add interior furnishings and decorations fitting the theme
-                - Include exterior details: trim, overhangs, paths, landscaping, lighting
-                - Use varied materials for visual interest (3-5 block types)
-                - Apply all 5 detail layers from the CREATIVE EXPANSION guidelines
-                """.formatted(description);
         userMsg.addProperty("content", userPrompt);
         messages.add(userMsg);
 
         requestBody.add("messages", messages);
 
-        JsonObject responseFormat = new JsonObject();
-        responseFormat.addProperty("type", "json_object");
-        requestBody.add("response_format", responseFormat);
+        if (jsonFormat) {
+            JsonObject responseFormat = new JsonObject();
+            responseFormat.addProperty("type", "json_object");
+            requestBody.add("response_format", responseFormat);
+        }
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(API_URL))
@@ -64,24 +83,23 @@ public class OpenRouterClient {
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(requestBody)))
                 .build();
 
-        CraftAssistMod.LOGGER.debug("[CraftAssist] API 請求 | 模型: {} | 描述: {}", config.getModel(), description);
         long startTime = System.nanoTime();
 
         return HTTP_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(response -> {
                     long elapsedMs = (System.nanoTime() - startTime) / 1_000_000;
                     if (response.statusCode() != 200) {
-                        CraftAssistMod.LOGGER.error("[CraftAssist] API 錯誤 | HTTP {} | 耗時: {}ms | 回應: {}",
-                                response.statusCode(), elapsedMs, response.body());
+                        CraftAssistMod.LOGGER.error("[CraftAssist] {} API 錯誤 | HTTP {} | 耗時: {}ms | 回應: {}",
+                                stage, response.statusCode(), elapsedMs, response.body());
                         throw new RuntimeException("API 回應錯誤 (HTTP " + response.statusCode() + "): " + response.body());
                     }
-                    CraftAssistMod.LOGGER.debug("[CraftAssist] API 回應 | HTTP {} | 耗時: {}ms",
-                            response.statusCode(), elapsedMs);
-                    return parseResponse(response.body());
+                    CraftAssistMod.LOGGER.debug("[CraftAssist] {} API 回應 | HTTP {} | 耗時: {}ms",
+                            stage, response.statusCode(), elapsedMs);
+                    return response.body();
                 });
     }
 
-    private static BuildStructure parseResponse(String responseBody) {
+    private static String parseTextResponse(String responseBody, String stage) {
         try {
             JsonObject response = JsonParser.parseString(responseBody).getAsJsonObject();
             String content = response.getAsJsonArray("choices")
@@ -89,11 +107,28 @@ public class OpenRouterClient {
                     .getAsJsonObject("message")
                     .get("content").getAsString();
 
-            CraftAssistMod.LOGGER.debug("[CraftAssist] LLM 回應內容:\n{}", content);
+            CraftAssistMod.LOGGER.debug("[CraftAssist] {} 藍圖內容:\n{}", stage, content);
+
+            return content;
+        } catch (Exception e) {
+            CraftAssistMod.LOGGER.error("[CraftAssist] {} 無法解析 API 回應", stage, e);
+            return null;
+        }
+    }
+
+    private static BuildStructure parseBuildResponse(String responseBody, String stage) {
+        try {
+            JsonObject response = JsonParser.parseString(responseBody).getAsJsonObject();
+            String content = response.getAsJsonArray("choices")
+                    .get(0).getAsJsonObject()
+                    .getAsJsonObject("message")
+                    .get("content").getAsString();
+
+            CraftAssistMod.LOGGER.debug("[CraftAssist] {} LLM 回應內容:\n{}", stage, content);
 
             return GSON.fromJson(content, BuildStructure.class);
         } catch (Exception e) {
-            CraftAssistMod.LOGGER.error("[CraftAssist] 無法解析 API 回應", e);
+            CraftAssistMod.LOGGER.error("[CraftAssist] {} 無法解析 API 回應", stage, e);
             return null;
         }
     }

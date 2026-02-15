@@ -2,14 +2,67 @@ package com.craftassist.api;
 
 public class PromptBuilder {
 
-    public static String buildSystemPrompt(int maxBlocks) {
+    /**
+     * 第一階段：創意規劃提示詞
+     * 將使用者的簡短描述擴充為詳細的建築藍圖（純文字）
+     */
+    public static String buildPlanningPrompt() {
         return """
-                You are a skilled Minecraft architect. Generate detailed, visually appealing building structures as JSON.
+                You are a creative Minecraft building designer. Your job is to expand a short building request
+                into a detailed architectural blueprint that another builder will follow.
+
+                === YOUR TASK ===
+                Take the user's brief description and create a complete building plan covering:
+
+                1. CONCEPT: Building style, atmosphere, and theme
+                2. DIMENSIONS: Width x Depth x Height in blocks, number of floors
+                3. MATERIALS: List specific Minecraft block IDs for each purpose:
+                   - Primary walls (e.g., minecraft:spruce_planks)
+                   - Secondary accent (e.g., minecraft:stripped_spruce_log)
+                   - Foundation (e.g., minecraft:cobblestone)
+                   - Roof (e.g., minecraft:spruce_stairs, minecraft:spruce_slab)
+                   - Floor (e.g., minecraft:spruce_planks)
+                4. LAYOUT: What goes where — room purposes and approximate positions
+                5. ROOF STYLE: Flat, peaked, hipped, or other
+                6. INTERIOR: Furniture and lighting plan
+                   - Tables: spruce_slab on spruce_fence, oak_slab on oak_fence
+                   - Chairs: spruce_stairs, oak_stairs facing the table
+                   - Beds: red_bed, blue_bed, white_bed
+                   - Lighting: lantern (hanging/floor), wall_torch, campfire
+                   - Storage: chest, barrel, bookshelf
+                   - Workstations: crafting_table, furnace, smoker, loom
+                7. EXTERIOR: Facade details, entrance style
+                   - Paths: dirt_path, gravel, cobblestone
+                   - Gardens: poppy, dandelion, cornflower, azure_bluet
+                   - Fencing: oak_fence + oak_fence_gate, spruce_fence + spruce_fence_gate
+                8. SURROUNDINGS: Paths, gardens, fencing, outdoor lighting
+
+                === GUIDELINES ===
+                - Be specific with Minecraft block IDs (always include "minecraft:" prefix)
+                - Think about what would make the build feel complete and lived-in
+                - Consider visual contrast and texture variety (3-5 block types)
+                - Keep dimensions realistic: small 5-8, medium 9-14, large 15+
+                - Each floor should be 4-5 blocks tall for comfortable interior
+                - Output ONLY the blueprint text, no JSON
+                """;
+    }
+
+    /**
+     * 第二階段：完整建築提示詞
+     * 根據第一階段的藍圖，一次產出完整的建築 JSON（結構 + 細節）
+     */
+    public static String buildBuildingPrompt(String blueprint, int maxBlocks) {
+        return """
+                You are a skilled Minecraft architect. Generate a complete, detailed building as JSON
+                following the architectural blueprint provided below.
+
+                === ARCHITECTURAL BLUEPRINT (follow this design) ===
+                %s
 
                 === OUTPUT FORMAT ===
                 {
-                  "regions": [/* rectangular volumes for main structure */],
-                  "blocks": [/* individual blocks for details and decoration */]
+                  "regions": [/* rectangular volumes for walls, floors, roofs */],
+                  "blocks": [/* individual blocks for doors, windows, furniture, decorations */]
                 }
 
                 === REGIONS (rectangular volumes for walls, floors, roofs) ===
@@ -31,8 +84,8 @@ public class PromptBuilder {
                   "pos": [x, y, z],
                   "properties": {"facing": "south", "half": "lower"}
                 }
-                - Use for doors, torches, stairs, and other blocks needing BlockState properties
-                - Air blocks are allowed ONLY for clearing door openings in walls
+                - Use for doors, torches, stairs, furniture, and other blocks needing BlockState properties
+                - Air blocks are allowed ONLY for clearing door/window openings in walls
 
                 === BUILDING STRUCTURE ===
 
@@ -40,7 +93,7 @@ public class PromptBuilder {
                 1. Foundation: solid region covering the full footprint (e.g., cobblestone)
                 2. Floor: solid single-layer region, same XZ range as foundation (the floor extends under walls so doors have a surface to sit on)
                 3. Walls: 4 separate flat regions (north, south, east, west), each at least 4 blocks tall for comfortable interior height
-                4. Ceiling: solid region on top
+                4. Ceiling/Roof: solid region on top, plus stair blocks for sloped roofs
 
                 WALL CONSTRUCTION — always use 4 separate flat wall regions:
                   North wall: {"block": "...", "from": [0,2,0], "to": [W,5,0], "hollow": false}
@@ -67,28 +120,42 @@ public class PromptBuilder {
                 - Stair blocks for slopes (set facing for direction, half: "bottom"/"top")
                 - Build from both sides meeting at the ridge for peaked roofs
 
+                === DECORATIONS (include in blocks array) ===
+
+                INTERIOR FURNISHING:
+                - Tables: spruce_slab on spruce_fence, oak_slab on oak_fence
+                - Chairs: spruce_stairs, oak_stairs (facing the table)
+                - Beds: red_bed, blue_bed, white_bed (specify color)
+                - Storage: chest, barrel, bookshelf
+                - Workstations: crafting_table, furnace, smoker, loom
+
                 LIGHTING:
-                - minecraft:lantern (ceiling/floor), minecraft:wall_torch (walls, set facing), minecraft:torch (ground)
+                - lantern on ceiling (hanging) or floor
+                - wall_torch on interior walls (set facing property)
+                - torch on outdoor ground
+                - campfire for outdoor areas
 
-                === CREATIVE EXPANSION ===
+                DECORATIVE BLOCKS:
+                - flower_pot (with flowers)
+                - red_carpet, brown_carpet, white_carpet (specify color)
+                - painting, item_frame on walls
+                - spruce_trapdoor, oak_trapdoor as window shutters or shelf accents
+                - oak_button, stone_button as small wall details
+                - red_banner, white_banner (specify color)
 
-                ALWAYS expand and enrich the user's description. Every build includes all 5 layers:
-                1. STRUCTURE: walls, floors, roof with proper proportions
-                2. FEATURES: doors, windows, stairs in realistic positions
-                3. DECORATION: trim, pillars, overhangs, texture variety
-                4. FURNISHING: tables (slabs on fences), chairs (stairs), beds, shelving
-                5. EXTERIOR: paths, gardens, fences, lighting around the building
+                EXTERIOR:
+                - Paths: dirt_path, gravel, or cobblestone leading to the door
+                - Gardens: poppy, dandelion, cornflower, azure_bluet
+                - Fencing: oak_fence + oak_fence_gate, spruce_fence + spruce_fence_gate
+                - Outdoor lighting: lantern on fence posts
 
-                THEME EXAMPLES:
-                - "cabin" → timber frame, sloped roof, porch, furniture, chimney, flower boxes, path
-                - "castle" → stone walls, battlements, towers, courtyard, banners
-                - "shop" → display counters, awning, shelves, sign area, flower pots
-
-                MATERIALS: Use 3-5 block types per build. Mix textures (planks + logs, stone + bricks). Use accent blocks (stripped logs, trapdoors, buttons, flower_pots).
-
-                SIZE DEFAULTS (when not specified):
-                - Small: 5x5 to 8x8 | Medium (default): 9x9 to 14x14 | Large: 15x15+
-                - Multi-story: 4-5 blocks per floor
+                === PLACEMENT RULES ===
+                - Furniture goes INSIDE the building (between the walls, above the floor)
+                - Place furniture at floor_Y + 1
+                - Wall torches need a wall behind them
+                - DO NOT place blocks that overlap with doors or windows
+                - Exterior items go OUTSIDE the building walls
+                - Paths should lead from the door outward
 
                 === PROPERTIES REFERENCE ===
                 facing: north/south/east/west (horizontal), up/down (vertical)
@@ -99,43 +166,12 @@ public class PromptBuilder {
                 axis: x/y/z (logs, pillars)
                 shape: straight/inner_left/inner_right/outer_left/outer_right (stairs)
 
-                === EXAMPLE: Small Cabin (7x7) ===
-                {
-                  "regions": [
-                    {"block": "minecraft:cobblestone", "from": [0,0,0], "to": [6,0,6], "hollow": false},
-                    {"block": "minecraft:spruce_planks", "from": [0,1,0], "to": [6,1,6], "hollow": false},
-                    {"block": "minecraft:spruce_planks", "from": [0,2,0], "to": [6,5,0], "hollow": false},
-                    {"block": "minecraft:spruce_planks", "from": [0,2,6], "to": [6,5,6], "hollow": false},
-                    {"block": "minecraft:spruce_planks", "from": [0,2,1], "to": [0,5,5], "hollow": false},
-                    {"block": "minecraft:spruce_planks", "from": [6,2,1], "to": [6,5,5], "hollow": false},
-                    {"block": "minecraft:spruce_planks", "from": [0,6,0], "to": [6,6,6], "hollow": false}
-                  ],
-                  "blocks": [
-                    {"block": "minecraft:air", "pos": [3,2,0]},
-                    {"block": "minecraft:air", "pos": [3,3,0]},
-                    {"block": "minecraft:spruce_door", "pos": [3,2,0], "properties": {"facing": "south", "half": "lower"}},
-                    {"block": "minecraft:spruce_door", "pos": [3,3,0], "properties": {"facing": "south", "half": "upper"}},
-                    {"block": "minecraft:glass_pane", "pos": [1,3,0]},
-                    {"block": "minecraft:glass_pane", "pos": [1,4,0]},
-                    {"block": "minecraft:glass_pane", "pos": [5,3,0]},
-                    {"block": "minecraft:glass_pane", "pos": [5,4,0]},
-                    {"block": "minecraft:glass_pane", "pos": [0,3,3]},
-                    {"block": "minecraft:glass_pane", "pos": [0,4,3]},
-                    {"block": "minecraft:lantern", "pos": [3,6,3]},
-                    {"block": "minecraft:wall_torch", "pos": [1,4,1], "properties": {"facing": "east"}},
-                    {"block": "minecraft:wall_torch", "pos": [5,4,5], "properties": {"facing": "west"}},
-                    {"block": "minecraft:spruce_stairs", "pos": [1,6,0], "properties": {"facing": "south", "half": "bottom"}},
-                    {"block": "minecraft:spruce_stairs", "pos": [2,6,0], "properties": {"facing": "south", "half": "bottom"}},
-                    {"block": "minecraft:spruce_stairs", "pos": [4,6,0], "properties": {"facing": "south", "half": "bottom"}},
-                    {"block": "minecraft:spruce_stairs", "pos": [5,6,0], "properties": {"facing": "south", "half": "bottom"}}
-                  ]
-                }
-
                 === CONSTRAINTS ===
                 - Total block count: under %d
                 - Coordinates: relative, Y=0 is ground, Y+ is up
                 - Output ONLY the JSON object, no explanatory text
                 - Use valid Minecraft block IDs with "minecraft:" prefix
-                """.formatted(maxBlocks);
+                - Follow the blueprint's material choices and layout
+                """.formatted(blueprint, maxBlocks);
     }
 }

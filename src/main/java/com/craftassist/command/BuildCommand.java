@@ -48,9 +48,22 @@ public class BuildCommand {
         }
 
         BlockPos origin = player.blockPosition().above();
-        WaitingAnimationManager.startWaiting(playerUuid);
+        WaitingAnimationManager.startWaiting(playerUuid, "階段 1/2：設計規劃");
 
-        OpenRouterClient.generate(description, config)
+        // 第一階段：創意規劃
+        OpenRouterClient.generatePlan(description, config)
+                .thenCompose(blueprint -> {
+                    if (blueprint == null || blueprint.isBlank()) {
+                        throw new RuntimeException("設計規劃失敗：無法取得建築藍圖");
+                    }
+
+                    // 更新進度提示
+                    server.execute(() ->
+                            WaitingAnimationManager.updateStage(playerUuid, "階段 2/2：生成建築"));
+
+                    // 第二階段：完整建築生成
+                    return OpenRouterClient.generateBuilding(blueprint, config);
+                })
                 .thenAccept(structure -> {
                     server.execute(() -> {
                         WaitingAnimationManager.stopWaiting(playerUuid);

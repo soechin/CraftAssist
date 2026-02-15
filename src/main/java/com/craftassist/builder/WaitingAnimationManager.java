@@ -39,7 +39,18 @@ public class WaitingAnimationManager {
     }
 
     public static void startWaiting(UUID playerUuid) {
-        waitingTasks.put(playerUuid, new WaitingTask());
+        waitingTasks.put(playerUuid, new WaitingTask("生成中"));
+    }
+
+    public static void startWaiting(UUID playerUuid, String stage) {
+        waitingTasks.put(playerUuid, new WaitingTask(stage));
+    }
+
+    public static void updateStage(UUID playerUuid, String stage) {
+        WaitingTask task = waitingTasks.get(playerUuid);
+        if (task != null) {
+            task.stage = stage;
+        }
     }
 
     public static void stopWaiting(UUID playerUuid) {
@@ -54,11 +65,16 @@ public class WaitingAnimationManager {
         int frameIndex = (task.tickCount / FRAME_INTERVAL) % SPINNER.length;
         int seconds = task.tickCount / 20;
 
-        String text = "§6[CraftAssist] §e生成中 §f" + SPINNER[frameIndex] + " §7(" + seconds + "秒)";
+        String text = "§6[CraftAssist] §e" + task.stage + " §f" + SPINNER[frameIndex] + " §7(" + seconds + "秒)";
         player.displayClientMessage(Component.literal(text), true);
     }
 
     private static class WaitingTask {
         int tickCount = 0;
+        String stage;
+
+        WaitingTask(String stage) {
+            this.stage = stage;
+        }
     }
 }
