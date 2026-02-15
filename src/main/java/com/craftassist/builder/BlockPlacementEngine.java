@@ -3,29 +3,28 @@ package com.craftassist.builder;
 import com.craftassist.CraftAssistMod;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class BlockPlacementEngine {
 
     /**
-     * 放置建築結構。
-     *
-     * @return 放置的方塊數，若超過限制則回傳 -1
+     * 預計算建築結構的所有方塊放置清單（不實際放置）。
+     * 供 BatchPlacementManager 分批放置使用。
      */
-    public static int place(ServerLevel world, BlockPos origin, BuildStructure structure, int maxBlocks) {
+    public static List<BatchPlacementManager.BlockPlacement> preparePlacements(
+            BlockPos origin, BuildStructure structure) {
+
+        List<BatchPlacementManager.BlockPlacement> placements = new ArrayList<>();
+
         if (structure.getRegions() == null || structure.getRegions().isEmpty()) {
-            return 0;
+            return placements;
         }
 
-        int totalBlocks = estimateBlocks(structure);
-        if (totalBlocks > maxBlocks) {
-            return -totalBlocks;
-        }
-
-        int placed = 0;
         for (BuildStructure.BlockRegion region : structure.getRegions()) {
             Block block = BlockValidator.validate(region.getBlock());
             if (block == null) {
@@ -35,19 +34,19 @@ public class BlockPlacementEngine {
             BlockState state = block.defaultBlockState();
             state = applyFacing(state, region.getFacing());
 
-            placed += placeRegion(world, origin, region, state);
+            collectRegionPlacements(origin, region, state, placements);
         }
 
-        CraftAssistMod.LOGGER.info("[CraftAssist] 放置了 {} 個方塊", placed);
-        return placed;
+        return placements;
     }
 
-    private static int placeRegion(ServerLevel world, BlockPos origin,
-                                   BuildStructure.BlockRegion region, BlockState state) {
+    private static void collectRegionPlacements(BlockPos origin, BuildStructure.BlockRegion region,
+                                                 BlockState state,
+                                                 List<BatchPlacementManager.BlockPlacement> output) {
         int[] from = region.getFrom();
         int[] to = region.getTo();
         if (from == null || to == null || from.length != 3 || to.length != 3) {
-            return 0;
+            return;
         }
 
         int minX = Math.min(from[0], to[0]);
@@ -57,7 +56,6 @@ public class BlockPlacementEngine {
         int maxY = Math.max(from[1], to[1]);
         int maxZ = Math.max(from[2], to[2]);
 
-        int count = 0;
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
                 for (int z = minZ; z <= maxZ; z++) {
@@ -65,12 +63,10 @@ public class BlockPlacementEngine {
                         continue;
                     }
                     BlockPos pos = origin.offset(x, y, z);
-                    world.setBlockAndUpdate(pos, state);
-                    count++;
+                    output.add(new BatchPlacementManager.BlockPlacement(pos, state));
                 }
             }
         }
-        return count;
     }
 
     private static boolean isOuter(int x, int y, int z,
@@ -102,28 +98,5 @@ public class BlockPlacementEngine {
         }
 
         return state;
-    }
-
-    private static int estimateBlocks(BuildStructure structure) {
-        int total = 0;
-        for (BuildStructure.BlockRegion region : structure.getRegions()) {
-            int[] from = region.getFrom();
-            int[] to = region.getTo();
-            if (from == null || to == null || from.length != 3 || to.length != 3) {
-                continue;
-            }
-
-            int dx = Math.abs(to[0] - from[0]) + 1;
-            int dy = Math.abs(to[1] - from[1]) + 1;
-            int dz = Math.abs(to[2] - from[2]) + 1;
-
-            if (region.isHollow()) {
-                // 粗略估算外殼方塊數
-                total += dx * dy * dz - Math.max(0, (dx - 2) * (dy - 2) * (dz - 2));
-            } else {
-                total += dx * dy * dz;
-            }
-        }
-        return total;
     }
 }

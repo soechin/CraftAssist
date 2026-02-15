@@ -24,18 +24,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 架構
 
-玩家透過 `/build <自然語言描述>` 指令觸發 → OpenRouter API 呼叫 LLM 生成建築 JSON → 伺服器端瞬間放置方塊。
+玩家透過 `/ca build <自然語言描述>` 指令觸發 → OpenRouter API 呼叫 LLM 生成建築 JSON → 分批放置方塊（每 tick 放置 `blocksPerTick` 個）。`/ca undo` 可復原上一次建築操作。
+
+### 指令
+
+- `/ca build <描述>` — AI 生成並分批放置建築
+- `/ca undo` — 復原上一次建築操作（per-player）
 
 ### 執行緒模型（關鍵）
 
-`BuildCommand`（伺服器執行緒）→ `OpenRouterClient.sendAsync()`（背景 HTTP 執行緒）→ `server.execute()`（回到伺服器執行緒放置方塊）。HTTP 請求必須非同步，方塊操作必須在伺服器執行緒。
+`BuildCommand`（伺服器執行緒）→ `OpenRouterClient.sendAsync()`（背景 HTTP 執行緒）→ `server.execute()`（回到伺服器執行緒）→ `BatchPlacementManager`（每 tick `END_SERVER_TICK` 分批放置）。HTTP 請求必須非同步，方塊操作必須在伺服器執行緒。
 
 ### 模組
 
-- **command/** — Brigadier 指令註冊，透過 `CommandRegistrationCallback.EVENT`
+- **command/** — Brigadier 指令註冊（`/ca` 前綴），透過 `CommandRegistrationCallback.EVENT`。`CraftAssistCommand` 負責指令樹，`BuildCommand` 與 `UndoCommand` 為子指令處理器
 - **api/** — OpenRouter HTTP 客戶端（`java.net.HttpClient`）與 LLM 系統提示詞。API 回應強制 `response_format: json_object`
-- **builder/** — 建築結構資料模型（區域壓縮 JSON）、方塊 ID 驗證（從 `BuiltInRegistries` 動態查詢）、放置引擎（支援 hollow 區域與方向性方塊）
-- **config/** — Gson 讀寫 `config/craftassist.json`（含 API key、模型、方塊限制）
+- **builder/** — 建築結構資料模型（區域壓縮 JSON）、方塊 ID 驗證（從 `BuiltInRegistries` 動態查詢）、放置引擎（`BlockPlacementEngine.preparePlacements()` 預計算方塊清單）、`BatchPlacementManager` 分批放置與進度顯示
+- **undo/** — `UndoData`（BlockPos + BlockState 快照）、`UndoManager`（per-player ConcurrentHashMap）
+- **config/** — Gson 讀寫 `config/craftassist.json`（含 API key、模型、blocksPerTick）
 
 ### LLM 建築 JSON 格式
 
@@ -49,6 +55,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 座標為玩家位置的相對座標，`hollow: true` 只放外殼，`facing` 用於方向性方塊。
 
-### place() 回傳值約定
+### 批次放置系統
 
-`BlockPlacementEngine.place()` 回傳正數為放置方塊數，`0` 表示空結構，**負數為估算方塊數（超過限制時回傳 `-totalBlocks`）**。
+`BlockPlacementEngine.preparePlacements()` 預計算所有 `BlockPlacement(pos, state)` 清單 → `BatchPlacementManager` 透過 `ServerTickEvents.END_SERVER_TICK` 每 tick 放置 `blocksPerTick` 個方塊，並在 Action Bar 顯示進度條。放置前記錄原始 BlockState 供 undo。Undo 也走批次還原。
+
+建築/復原進行中時，拒絕新的 `/ca build` 或 `/ca undo` 指令。

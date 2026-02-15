@@ -3,7 +3,8 @@ package com.craftassist.config;
 public class ModConfig {
     private String apiKey = "";
     private String model = "anthropic/claude-sonnet-4-5";
-    private int maxBlocks = 5000;
+    private int maxBlocks = 1000000;
+    private int blocksPerTick = 500;
     private int timeoutSeconds = 60;
 
     public String getApiKey() {
@@ -28,6 +29,14 @@ public class ModConfig {
 
     public void setMaxBlocks(int maxBlocks) {
         this.maxBlocks = maxBlocks;
+    }
+
+    public int getBlocksPerTick() {
+        return blocksPerTick;
+    }
+
+    public void setBlocksPerTick(int blocksPerTick) {
+        this.blocksPerTick = blocksPerTick;
     }
 
     public int getTimeoutSeconds() {

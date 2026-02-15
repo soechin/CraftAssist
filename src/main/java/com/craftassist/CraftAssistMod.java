@@ -1,6 +1,7 @@
 package com.craftassist;
 
-import com.craftassist.command.BuildCommand;
+import com.craftassist.builder.BatchPlacementManager;
+import com.craftassist.command.CraftAssistCommand;
 import com.craftassist.config.ConfigManager;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
@@ -14,7 +15,8 @@ public class CraftAssistMod implements ModInitializer {
     @Override
     public void onInitialize() {
         ConfigManager.load();
-        BuildCommand.register();
+        CraftAssistCommand.register();
+        BatchPlacementManager.init();
         LOGGER.info("[CraftAssist] 模組已載入");
     }
 }
