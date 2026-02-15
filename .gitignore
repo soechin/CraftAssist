@@ -21,3 +21,6 @@ Thumbs.db
 # Fabric
 run/
 logs/
+
+# Claude Code
+.claude/*.local.*
