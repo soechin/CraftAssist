@@ -36,7 +36,17 @@ public class OpenRouterClient {
 
         JsonObject userMsg = new JsonObject();
         userMsg.addProperty("role", "user");
-        userMsg.addProperty("content", "Build: " + description);
+        String userPrompt = """
+                Build: %s
+
+                Expand this idea creatively. Go beyond what was described:
+                - Imagine what would make this build feel complete and lived-in
+                - Add interior furnishings and decorations fitting the theme
+                - Include exterior details: trim, overhangs, paths, landscaping, lighting
+                - Use varied materials for visual interest (3-5 block types)
+                - Apply all 5 detail layers from the CREATIVE EXPANSION guidelines
+                """.formatted(description);
+        userMsg.addProperty("content", userPrompt);
         messages.add(userMsg);
 
         requestBody.add("messages", messages);
