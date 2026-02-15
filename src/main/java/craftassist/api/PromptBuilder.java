@@ -1,4 +1,4 @@
-package com.craftassist.api;
+package craftassist.api;
 
 public class PromptBuilder {
 

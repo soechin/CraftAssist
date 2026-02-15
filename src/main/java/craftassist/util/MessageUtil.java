@@ -1,4 +1,4 @@
-package com.craftassist.util;
+package craftassist.util;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;

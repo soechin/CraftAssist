@@ -1,4 +1,4 @@
-package com.craftassist.command;
+package craftassist.command;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;

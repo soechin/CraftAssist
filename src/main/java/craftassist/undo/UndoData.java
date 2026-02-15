@@ -1,4 +1,4 @@
-package com.craftassist.undo;
+package craftassist.undo;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;

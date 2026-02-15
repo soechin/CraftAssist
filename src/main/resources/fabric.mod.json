@@ -10,7 +10,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "com.craftassist.CraftAssistMod"
+      "craftassist.CraftAssistMod"
     ]
   },
   "mixins": [],

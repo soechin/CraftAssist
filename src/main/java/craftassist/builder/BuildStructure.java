@@ -1,4 +1,4 @@
-package com.craftassist.builder;
+package craftassist.builder;
 
 import java.util.List;
 import java.util.Map;

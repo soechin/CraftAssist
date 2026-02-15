@@ -1,12 +1,12 @@
-package com.craftassist.command;
+package craftassist.command;
 
-import com.craftassist.api.OpenRouterClient;
-import com.craftassist.builder.BatchPlacementManager;
-import com.craftassist.builder.BlockPlacementEngine;
-import com.craftassist.builder.WaitingAnimationManager;
-import com.craftassist.config.ConfigManager;
-import com.craftassist.config.ModConfig;
-import com.craftassist.util.MessageUtil;
+import craftassist.api.OpenRouterClient;
+import craftassist.builder.BatchPlacementManager;
+import craftassist.builder.BlockPlacementEngine;
+import craftassist.builder.WaitingAnimationManager;
+import craftassist.config.ConfigManager;
+import craftassist.config.ModConfig;
+import craftassist.util.MessageUtil;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;

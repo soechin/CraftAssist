@@ -1,4 +1,4 @@
-package com.craftassist.builder;
+package craftassist.builder;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Block;

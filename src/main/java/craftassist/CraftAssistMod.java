@@ -1,9 +1,9 @@
-package com.craftassist;
+package craftassist;
 
-import com.craftassist.builder.BatchPlacementManager;
-import com.craftassist.builder.WaitingAnimationManager;
-import com.craftassist.command.CraftAssistCommand;
-import com.craftassist.config.ConfigManager;
+import craftassist.builder.BatchPlacementManager;
+import craftassist.builder.WaitingAnimationManager;
+import craftassist.command.CraftAssistCommand;
+import craftassist.config.ConfigManager;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

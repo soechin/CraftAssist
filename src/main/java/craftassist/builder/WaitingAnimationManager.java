@@ -1,4 +1,4 @@
-package com.craftassist.builder;
+package craftassist.builder;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.network.chat.Component;

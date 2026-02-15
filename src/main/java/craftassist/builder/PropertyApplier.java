@@ -1,6 +1,6 @@
-package com.craftassist.builder;
+package craftassist.builder;
 
-import com.craftassist.CraftAssistMod;
+import craftassist.CraftAssistMod;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.*;

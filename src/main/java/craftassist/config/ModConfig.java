@@ -1,4 +1,4 @@
-package com.craftassist.config;
+package craftassist.config;
 
 public class ModConfig {
     private String apiKey = "";

@@ -1,10 +1,10 @@
-package com.craftassist.builder;
+package craftassist.builder;
 
-import com.craftassist.CraftAssistMod;
-import com.craftassist.config.ConfigManager;
-import com.craftassist.undo.UndoData;
-import com.craftassist.undo.UndoManager;
-import com.craftassist.util.MessageUtil;
+import craftassist.CraftAssistMod;
+import craftassist.config.ConfigManager;
+import craftassist.undo.UndoData;
+import craftassist.undo.UndoManager;
+import craftassist.util.MessageUtil;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;

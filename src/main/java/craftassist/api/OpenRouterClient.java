@@ -1,8 +1,8 @@
-package com.craftassist.api;
+package craftassist.api;
 
-import com.craftassist.CraftAssistMod;
-import com.craftassist.builder.BuildStructure;
-import com.craftassist.config.ModConfig;
+import craftassist.CraftAssistMod;
+import craftassist.builder.BuildStructure;
+import craftassist.config.ModConfig;
 import com.google.gson.*;
 
 import java.net.URI;

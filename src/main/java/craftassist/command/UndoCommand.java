@@ -1,9 +1,9 @@
-package com.craftassist.command;
+package craftassist.command;
 
-import com.craftassist.builder.BatchPlacementManager;
-import com.craftassist.undo.UndoData;
-import com.craftassist.undo.UndoManager;
-import com.craftassist.util.MessageUtil;
+import craftassist.builder.BatchPlacementManager;
+import craftassist.undo.UndoData;
+import craftassist.undo.UndoManager;
+import craftassist.util.MessageUtil;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
