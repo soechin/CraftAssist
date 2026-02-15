@@ -3,6 +3,7 @@ package com.craftassist.command;
 import com.craftassist.api.OpenRouterClient;
 import com.craftassist.builder.BatchPlacementManager;
 import com.craftassist.builder.BlockPlacementEngine;
+import com.craftassist.builder.WaitingAnimationManager;
 import com.craftassist.config.ConfigManager;
 import com.craftassist.config.ModConfig;
 import com.craftassist.util.MessageUtil;
@@ -41,17 +42,19 @@ public class BuildCommand {
         }
 
         // 檢查是否有進行中的任務
-        if (BatchPlacementManager.hasActiveTask(playerUuid)) {
+        if (BatchPlacementManager.hasActiveTask(playerUuid) || WaitingAnimationManager.isWaiting(playerUuid)) {
             MessageUtil.sendError(player, "您已有進行中的建築任務，請稍後再試");
             return 0;
         }
 
         BlockPos origin = player.blockPosition().above();
-        MessageUtil.sendProgress(player, "正在生成建築: " + description + " ...");
+        WaitingAnimationManager.startWaiting(playerUuid);
 
         OpenRouterClient.generate(description, config)
                 .thenAccept(structure -> {
                     server.execute(() -> {
+                        WaitingAnimationManager.stopWaiting(playerUuid);
+
                         if (structure == null) {
                             MessageUtil.sendError(player, "生成失敗：無法解析 AI 回應");
                             return;
@@ -80,6 +83,7 @@ public class BuildCommand {
                 })
                 .exceptionally(ex -> {
                     server.execute(() -> {
+                        WaitingAnimationManager.stopWaiting(playerUuid);
                         MessageUtil.sendError(player, "生成失敗: " + ex.getMessage());
                     });
                     return null;

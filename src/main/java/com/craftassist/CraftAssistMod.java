@@ -1,6 +1,7 @@
 package com.craftassist;
 
 import com.craftassist.builder.BatchPlacementManager;
+import com.craftassist.builder.WaitingAnimationManager;
 import com.craftassist.command.CraftAssistCommand;
 import com.craftassist.config.ConfigManager;
 import net.fabricmc.api.ModInitializer;
@@ -17,6 +18,7 @@ public class CraftAssistMod implements ModInitializer {
         ConfigManager.load();
         CraftAssistCommand.register();
         BatchPlacementManager.init();
+        WaitingAnimationManager.init();
         LOGGER.info("[CraftAssist] 模組已載入");
     }
 }
