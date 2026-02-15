@@ -54,11 +54,19 @@ public class OpenRouterClient {
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(requestBody)))
                 .build();
 
+        CraftAssistMod.LOGGER.debug("[CraftAssist] API 請求 | 模型: {} | 描述: {}", config.getModel(), description);
+        long startTime = System.nanoTime();
+
         return HTTP_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(response -> {
+                    long elapsedMs = (System.nanoTime() - startTime) / 1_000_000;
                     if (response.statusCode() != 200) {
+                        CraftAssistMod.LOGGER.error("[CraftAssist] API 錯誤 | HTTP {} | 耗時: {}ms | 回應: {}",
+                                response.statusCode(), elapsedMs, response.body());
                         throw new RuntimeException("API 回應錯誤 (HTTP " + response.statusCode() + "): " + response.body());
                     }
+                    CraftAssistMod.LOGGER.debug("[CraftAssist] API 回應 | HTTP {} | 耗時: {}ms",
+                            response.statusCode(), elapsedMs);
                     return parseResponse(response.body());
                 });
     }
@@ -70,6 +78,8 @@ public class OpenRouterClient {
                     .get(0).getAsJsonObject()
                     .getAsJsonObject("message")
                     .get("content").getAsString();
+
+            CraftAssistMod.LOGGER.debug("[CraftAssist] LLM 回應內容:\n{}", content);
 
             return GSON.fromJson(content, BuildStructure.class);
         } catch (Exception e) {
