@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "craftassist",
+  "version": "${version}",
+  "name": "CraftAssist",
+  "description": "AI-powered building assistant for Minecraft",
+  "authors": [],
+  "contact": {},
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.craftassist.CraftAssistMod"
+    ]
+  },
+  "mixins": [],
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "fabric-api": "*",
+    "minecraft": "~1.21.11",
+    "java": ">=21"
+  }
+}
