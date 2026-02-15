@@ -1,43 +1,72 @@
 package com.craftassist.builder;
 
-import com.craftassist.CraftAssistMod;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class BlockPlacementEngine {
 
     /**
      * 預計算建築結構的所有方塊放置清單（不實際放置）。
-     * 供 BatchPlacementManager 分批放置使用。
+     * 處理順序：先 regions（主結構），再 blocks（裝飾細節）。
      */
     public static List<BatchPlacementManager.BlockPlacement> preparePlacements(
             BlockPos origin, BuildStructure structure) {
 
         List<BatchPlacementManager.BlockPlacement> placements = new ArrayList<>();
 
-        if (structure.getRegions() == null || structure.getRegions().isEmpty()) {
-            return placements;
-        }
+        // 1. 處理 regions（主結構）
+        if (structure.getRegions() != null) {
+            for (BuildStructure.BlockRegion region : structure.getRegions()) {
+                Block block = BlockValidator.validate(region.getBlock());
+                if (block == null) {
+                    continue;
+                }
 
-        for (BuildStructure.BlockRegion region : structure.getRegions()) {
-            Block block = BlockValidator.validate(region.getBlock());
-            if (block == null) {
-                continue;
+                BlockState state = block.defaultBlockState();
+                state = PropertyApplier.applyFacing(state, region.getFacing());
+
+                collectRegionPlacements(origin, region, state, placements);
             }
-
-            BlockState state = block.defaultBlockState();
-            state = applyFacing(state, region.getFacing());
-
-            collectRegionPlacements(origin, region, state, placements);
         }
 
-        return placements;
+        // 2. 處理 individual blocks（裝飾細節）
+        if (structure.getBlocks() != null) {
+            for (BuildStructure.IndividualBlock individual : structure.getBlocks()) {
+                Block block = BlockValidator.validate(individual.getBlock());
+                if (block == null) {
+                    continue;
+                }
+
+                BlockState state = block.defaultBlockState();
+                state = PropertyApplier.applyProperties(state, individual.getProperties());
+
+                int[] pos = individual.getPos();
+                if (pos != null && pos.length == 3) {
+                    BlockPos worldPos = origin.offset(pos[0], pos[1], pos[2]);
+                    placements.add(new BatchPlacementManager.BlockPlacement(worldPos, state));
+                }
+            }
+        }
+
+        return dedup(placements);
+    }
+
+    /**
+     * 按 BlockPos 去重，後出現的覆蓋先出現的（blocks 覆蓋 regions）。
+     */
+    private static List<BatchPlacementManager.BlockPlacement> dedup(
+            List<BatchPlacementManager.BlockPlacement> placements) {
+        Map<BlockPos, BatchPlacementManager.BlockPlacement> map = new LinkedHashMap<>();
+        for (BatchPlacementManager.BlockPlacement bp : placements) {
+            map.put(bp.pos(), bp);
+        }
+        return new ArrayList<>(map.values());
     }
 
     private static void collectRegionPlacements(BlockPos origin, BuildStructure.BlockRegion region,
@@ -75,28 +104,5 @@ public class BlockPlacementEngine {
         return x == minX || x == maxX ||
                y == minY || y == maxY ||
                z == minZ || z == maxZ;
-    }
-
-    private static BlockState applyFacing(BlockState state, String facingStr) {
-        if (facingStr == null || facingStr.isEmpty()) {
-            return state;
-        }
-
-        try {
-            if (state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
-                Direction dir = switch (facingStr.toLowerCase()) {
-                    case "north" -> Direction.NORTH;
-                    case "south" -> Direction.SOUTH;
-                    case "east" -> Direction.EAST;
-                    case "west" -> Direction.WEST;
-                    default -> Direction.NORTH;
-                };
-                return state.setValue(BlockStateProperties.HORIZONTAL_FACING, dir);
-            }
-        } catch (Exception e) {
-            CraftAssistMod.LOGGER.warn("[CraftAssist] 無法設定方塊朝向: {}", facingStr);
-        }
-
-        return state;
     }
 }
