@@ -42,6 +42,18 @@ public class BuildStructure {
         public String getFacing() {
             return facing;
         }
+
+        public void setFrom(int[] from) {
+            this.from = from;
+        }
+
+        public void setTo(int[] to) {
+            this.to = to;
+        }
+
+        public void setFacing(String facing) {
+            this.facing = facing;
+        }
     }
 
     public static class IndividualBlock {
@@ -59,6 +71,10 @@ public class BuildStructure {
 
         public Map<String, String> getProperties() {
             return properties;
+        }
+
+        public void setPos(int[] pos) {
+            this.pos = pos;
         }
     }
 }

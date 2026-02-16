@@ -64,6 +64,39 @@ public class BuildingOffsetCalculator {
     }
 
     /**
+     * 僅掃描 regions（不含 blocks）的 bounding box，用於判斷結構牆壁邊界。
+     * blocks 中的裝飾（路徑、花園、外部照明）可能延伸到牆外，
+     * 用此方法可取得更精準的建築本體邊界。
+     */
+    public static BoundingBox computeRegionBoundingBox(BuildStructure structure) {
+        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+        boolean hasAny = false;
+
+        if (structure.getRegions() != null) {
+            for (BuildStructure.BlockRegion region : structure.getRegions()) {
+                int[] from = region.getFrom();
+                int[] to = region.getTo();
+                if (from == null || to == null || from.length != 3 || to.length != 3) {
+                    continue;
+                }
+                hasAny = true;
+                minX = Math.min(minX, Math.min(from[0], to[0]));
+                minY = Math.min(minY, Math.min(from[1], to[1]));
+                minZ = Math.min(minZ, Math.min(from[2], to[2]));
+                maxX = Math.max(maxX, Math.max(from[0], to[0]));
+                maxY = Math.max(maxY, Math.max(from[1], to[1]));
+                maxZ = Math.max(maxZ, Math.max(from[2], to[2]));
+            }
+        }
+
+        if (!hasAny) {
+            return new BoundingBox(0, 0, 0, 0, 0, 0);
+        }
+        return new BoundingBox(minX, minY, minZ, maxX, maxY, maxZ);
+    }
+
+    /**
      * 根據玩家面向和建築 bounding box，計算偏移後的 origin，
      * 使玩家站在建築物入口前方約 {@value GAP} 格的位置，且建築置中於玩家視線。
      */

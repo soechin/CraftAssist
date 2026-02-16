@@ -5,6 +5,7 @@ import craftassist.api.OpenRouterClient;
 import craftassist.api.RateLimiter;
 import craftassist.builder.BatchPlacementManager;
 import craftassist.builder.BlockPlacementEngine;
+import craftassist.builder.BuildStructureRotator;
 import craftassist.builder.BuildingOffsetCalculator;
 import craftassist.builder.WaitingAnimationManager;
 import craftassist.config.ConfigManager;
@@ -84,7 +85,18 @@ public class BuildCommand {
                             return;
                         }
 
-                        // 根據建築尺寸和玩家面向計算偏移後的 origin，使建築出現在玩家前方
+                        // 偵測入口牆面，必要時旋轉建築使門面對玩家
+                        Direction entranceWall =
+                                BuildStructureRotator.detectEntranceWall(structure);
+                        if (entranceWall != null) {
+                            int rotations = BuildStructureRotator.computeRotationCount(
+                                    entranceWall, facing);
+                            if (rotations != 0) {
+                                BuildStructureRotator.rotateStructure(structure, rotations);
+                            }
+                        }
+
+                        // 旋轉後重新計算 bbox 和 origin，使建築出現在玩家前方
                         BuildingOffsetCalculator.BoundingBox bbox =
                                 BuildingOffsetCalculator.computeBoundingBox(structure);
                         BlockPos origin = BuildingOffsetCalculator.computeOrigin(
