@@ -15,7 +15,9 @@ public class CraftAssistCommand {
                             .then(Commands.argument("description", StringArgumentType.greedyString())
                                     .executes(BuildCommand::execute)))
                     .then(Commands.literal("undo")
-                            .executes(UndoCommand::execute)));
+                            .executes(UndoCommand::execute))
+                    .then(Commands.literal("reload")
+                            .executes(ReloadCommand::execute)));
         });
     }
 }

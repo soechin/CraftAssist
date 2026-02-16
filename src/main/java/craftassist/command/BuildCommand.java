@@ -1,6 +1,8 @@
 package craftassist.command;
 
+import craftassist.api.ApiException;
 import craftassist.api.OpenRouterClient;
+import craftassist.api.RateLimiter;
 import craftassist.builder.BatchPlacementManager;
 import craftassist.builder.BlockPlacementEngine;
 import craftassist.builder.WaitingAnimationManager;
@@ -13,6 +15,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -47,11 +50,18 @@ public class BuildCommand {
             return 0;
         }
 
-        BlockPos origin = player.blockPosition().above();
+        // 速率限制
+        if (!RateLimiter.tryConsume(playerUuid)) {
+            MessageUtil.sendError(player, "請求過於頻繁，請稍後再試");
+            return 0;
+        }
+
+        BlockPos origin = player.blockPosition();
+        Direction facing = player.getDirection();
         WaitingAnimationManager.startWaiting(playerUuid, "階段 1/2：設計規劃");
 
         // 第一階段：創意規劃
-        OpenRouterClient.generatePlan(description, config)
+        OpenRouterClient.generatePlan(description, facing, config)
                 .thenCompose(blueprint -> {
                     if (blueprint == null || blueprint.isBlank()) {
                         throw new RuntimeException("設計規劃失敗：無法取得建築藍圖");
@@ -97,7 +107,12 @@ public class BuildCommand {
                 .exceptionally(ex -> {
                     server.execute(() -> {
                         WaitingAnimationManager.stopWaiting(playerUuid);
-                        MessageUtil.sendError(player, "生成失敗: " + ex.getMessage());
+                        Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+                        if (cause instanceof ApiException apiEx) {
+                            MessageUtil.sendError(player, apiEx.getMessage());
+                        } else {
+                            MessageUtil.sendError(player, "生成失敗：" + cause.getMessage());
+                        }
                     });
                     return null;
                 });

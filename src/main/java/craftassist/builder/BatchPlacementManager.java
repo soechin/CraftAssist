@@ -50,15 +50,18 @@ public class BatchPlacementManager {
     }
 
     public static boolean startTask(UUID playerUuid, BatchTask task) {
-        if (activeTasks.containsKey(playerUuid)) {
-            return false;
-        }
-        activeTasks.put(playerUuid, task);
-        return true;
+        return activeTasks.putIfAbsent(playerUuid, task) == null;
     }
 
     public static boolean hasActiveTask(UUID playerUuid) {
         return activeTasks.containsKey(playerUuid);
+    }
+
+    public static void shutdown() {
+        if (!activeTasks.isEmpty()) {
+            CraftAssistMod.LOGGER.warn("[CraftAssist] 伺服器關閉時仍有 {} 個未完成的批次任務", activeTasks.size());
+            activeTasks.clear();
+        }
     }
 
     private static void onTaskComplete(UUID playerUuid, BatchTask task, ServerPlayer player) {

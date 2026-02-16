@@ -1,10 +1,13 @@
 package craftassist.builder;
 
+import craftassist.CraftAssistMod;
+import craftassist.config.ConfigManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,14 +72,46 @@ public class BlockPlacementEngine {
         return new ArrayList<>(map.values());
     }
 
-    private static void collectRegionPlacements(BlockPos origin, BuildStructure.BlockRegion region,
-                                                 BlockState state,
-                                                 List<BatchPlacementManager.BlockPlacement> output) {
+    private static boolean isRegionValid(BuildStructure.BlockRegion region) {
         int[] from = region.getFrom();
         int[] to = region.getTo();
         if (from == null || to == null || from.length != 3 || to.length != 3) {
+            return false;
+        }
+
+        int maxCoord = ConfigManager.getConfig().getMaxCoordinate();
+        for (int i = 0; i < 3; i++) {
+            if (Math.abs(from[i]) > maxCoord || Math.abs(to[i]) > maxCoord) {
+                CraftAssistMod.LOGGER.warn("[CraftAssist] 區域座標超出限制 (±{}): from={}, to={}",
+                        maxCoord, Arrays.toString(from), Arrays.toString(to));
+                return false;
+            }
+        }
+
+        long dx = Math.abs((long) to[0] - from[0]) + 1;
+        long dy = Math.abs((long) to[1] - from[1]) + 1;
+        long dz = Math.abs((long) to[2] - from[2]) + 1;
+        long volume = dx * dy * dz;
+
+        int maxVolume = ConfigManager.getConfig().getMaxRegionVolume();
+        if (volume > maxVolume) {
+            CraftAssistMod.LOGGER.warn("[CraftAssist] 區域體積 {} 超過限制 {}: from={}, to={}",
+                    volume, maxVolume, Arrays.toString(from), Arrays.toString(to));
+            return false;
+        }
+
+        return true;
+    }
+
+    private static void collectRegionPlacements(BlockPos origin, BuildStructure.BlockRegion region,
+                                                 BlockState state,
+                                                 List<BatchPlacementManager.BlockPlacement> output) {
+        if (!isRegionValid(region)) {
             return;
         }
+
+        int[] from = region.getFrom();
+        int[] to = region.getTo();
 
         int minX = Math.min(from[0], to[0]);
         int minY = Math.min(from[1], to[1]);

@@ -20,6 +20,9 @@ public class ConfigManager {
             try {
                 String json = Files.readString(configPath);
                 config = GSON.fromJson(json, ModConfig.class);
+                if (validateAndFix()) {
+                    save();
+                }
                 CraftAssistMod.LOGGER.info("[CraftAssist] 配置已載入");
             } catch (IOException e) {
                 CraftAssistMod.LOGGER.error("[CraftAssist] 無法讀取配置檔案", e);
@@ -29,6 +32,30 @@ public class ConfigManager {
             save();
             CraftAssistMod.LOGGER.info("[CraftAssist] 已建立預設配置檔案: {}", configPath);
         }
+    }
+
+    private static boolean validateAndFix() {
+        boolean fixed = false;
+
+        if (config.getBlocksPerTick() <= 0) {
+            CraftAssistMod.LOGGER.warn("[CraftAssist] blocksPerTick 無效 ({})，已重設為 500", config.getBlocksPerTick());
+            config.setBlocksPerTick(500);
+            fixed = true;
+        }
+
+        if (config.getMaxBlocks() > 1_000_000) {
+            CraftAssistMod.LOGGER.warn("[CraftAssist] maxBlocks 過高 ({})，已限制為 1,000,000", config.getMaxBlocks());
+            config.setMaxBlocks(1_000_000);
+            fixed = true;
+        }
+
+        if (config.getTimeoutSeconds() < 10 || config.getTimeoutSeconds() > 300) {
+            CraftAssistMod.LOGGER.warn("[CraftAssist] timeoutSeconds 無效 ({})，已重設為 60", config.getTimeoutSeconds());
+            config.setTimeoutSeconds(60);
+            fixed = true;
+        }
+
+        return fixed;
     }
 
     public static void save() {

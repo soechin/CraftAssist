@@ -4,7 +4,6 @@ import craftassist.CraftAssistMod;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 
 public class BlockValidator {
 
@@ -24,11 +23,6 @@ public class BlockValidator {
             return null;
         }
 
-        Block block = BuiltInRegistries.BLOCK.getValue(id);
-        if (block == Blocks.AIR) {
-            return null;
-        }
-
-        return block;
+        return BuiltInRegistries.BLOCK.getValue(id);
     }
 }

@@ -43,6 +43,10 @@ public class PromptBuilder {
                 - Consider visual contrast and texture variety (3-5 block types)
                 - Keep dimensions realistic: small 5-8, medium 9-14, large 15+
                 - Each floor should be 4-5 blocks tall for comfortable interior
+                - ENTRANCE ORIENTATION: The user will specify which direction they are facing.
+                  The building entrance (door) should face the player.
+                  Example: if the player faces north, place the entrance on the south wall (facing north).
+                  Plan the interior layout accordingly (e.g., main room visible from entrance).
                 - Output ONLY the blueprint text, no JSON
                 """;
     }
@@ -87,6 +91,14 @@ public class PromptBuilder {
                 - Use for doors, torches, stairs, furniture, and other blocks needing BlockState properties
                 - Air blocks are allowed ONLY for clearing door/window openings in walls
 
+                === COORDINATE SYSTEM ===
+                - X+ = east, X- = west
+                - Y+ = up, Y- = down
+                - Z+ = south, Z- = north
+                - [0,0,0] = ground level at player position, building extends in positive X and Z
+                - Example: "north wall" = the wall at min-Z, "south wall" = the wall at max-Z
+                - Example: "east wall" = the wall at max-X, "west wall" = the wall at min-X
+
                 === BUILDING STRUCTURE ===
 
                 LAYER PATTERN — build from bottom to top:
@@ -106,7 +118,14 @@ public class PromptBuilder {
                   1. Air blocks (to clear the wall opening)
                   2. Door blocks (at the same positions — they replace the air)
                   Door is 2 blocks tall, sitting on top of the floor layer.
-                  Template (floor at Y=1, door at Y=2-3):
+                  The door's "facing" property = the direction the player faces when walking through.
+                  Place the door ON the entrance wall specified in the blueprint.
+                  Template (floor at Y=1, door on south wall at Z=D):
+                    {"block": "minecraft:air", "pos": [3,2,D]},
+                    {"block": "minecraft:air", "pos": [3,3,D]},
+                    {"block": "minecraft:oak_door", "pos": [3,2,D], "properties": {"facing": "north", "half": "lower"}},
+                    {"block": "minecraft:oak_door", "pos": [3,3,D], "properties": {"facing": "north", "half": "upper"}}
+                  Template (door on north wall at Z=0):
                     {"block": "minecraft:air", "pos": [3,2,0]},
                     {"block": "minecraft:air", "pos": [3,3,0]},
                     {"block": "minecraft:oak_door", "pos": [3,2,0], "properties": {"facing": "south", "half": "lower"}},
@@ -168,10 +187,16 @@ public class PromptBuilder {
 
                 === CONSTRAINTS ===
                 - Total block count: under %d
-                - Coordinates: relative, Y=0 is ground, Y+ is up
+                - Coordinates: relative to ground level at player position, Y=0 is ground, Y+ is up
                 - Output ONLY the JSON object, no explanatory text
                 - Use valid Minecraft block IDs with "minecraft:" prefix
                 - Follow the blueprint's material choices and layout
+                - CRITICAL: Follow the blueprint's entrance orientation exactly.
+                  Map the entrance wall to the correct coordinate axis using the COORDINATE SYSTEM above.
+                  Example: "entrance on south wall" → door at max-Z wall, facing north.
+                  Example: "entrance on north wall" → door at min-Z wall, facing south.
+                  Example: "entrance on east wall" → door at max-X wall, facing west.
+                  Example: "entrance on west wall" → door at min-X wall, facing east.
                 """.formatted(blueprint, maxBlocks);
     }
 }
