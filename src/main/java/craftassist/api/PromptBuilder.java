@@ -95,7 +95,8 @@ public class PromptBuilder {
                 - X+ = east, X- = west
                 - Y+ = up, Y- = down
                 - Z+ = south, Z- = north
-                - [0,0,0] = ground level at player position, building extends in positive X and Z
+                - [0,0,0] = ground level at building origin, building extends in positive X and Z
+                - The program will automatically position the building in front of the player
                 - Example: "north wall" = the wall at min-Z, "south wall" = the wall at max-Z
                 - Example: "east wall" = the wall at max-X, "west wall" = the wall at min-X
 

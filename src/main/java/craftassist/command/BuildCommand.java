@@ -5,6 +5,7 @@ import craftassist.api.OpenRouterClient;
 import craftassist.api.RateLimiter;
 import craftassist.builder.BatchPlacementManager;
 import craftassist.builder.BlockPlacementEngine;
+import craftassist.builder.BuildingOffsetCalculator;
 import craftassist.builder.WaitingAnimationManager;
 import craftassist.config.ConfigManager;
 import craftassist.config.ModConfig;
@@ -56,7 +57,7 @@ public class BuildCommand {
             return 0;
         }
 
-        BlockPos origin = player.blockPosition();
+        BlockPos playerPos = player.blockPosition();
         Direction facing = player.getDirection();
         WaitingAnimationManager.startWaiting(playerUuid, "階段 1/2：設計規劃");
 
@@ -82,6 +83,12 @@ public class BuildCommand {
                             MessageUtil.sendError(player, "生成失敗：無法解析 AI 回應");
                             return;
                         }
+
+                        // 根據建築尺寸和玩家面向計算偏移後的 origin，使建築出現在玩家前方
+                        BuildingOffsetCalculator.BoundingBox bbox =
+                                BuildingOffsetCalculator.computeBoundingBox(structure);
+                        BlockPos origin = BuildingOffsetCalculator.computeOrigin(
+                                playerPos, facing, bbox);
 
                         // 預計算所有方塊放置清單
                         List<BatchPlacementManager.BlockPlacement> placements =
