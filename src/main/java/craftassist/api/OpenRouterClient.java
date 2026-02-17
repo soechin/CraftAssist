@@ -112,6 +112,8 @@ public class OpenRouterClient {
             JsonObject responseFormat = new JsonObject();
             responseFormat.addProperty("type", "json_object");
             requestBody.add("response_format", responseFormat);
+            // 建築 JSON 需要精確座標，降低隨機性
+            requestBody.addProperty("temperature", 0);
         }
 
         HttpRequest request = HttpRequest.newBuilder()

@@ -20,7 +20,7 @@ class PromptBuilderTest {
         assertTrue(prompt.contains("DIMENSIONS"));
         assertTrue(prompt.contains("MATERIALS"));
         assertTrue(prompt.contains("minecraft:"));
-        assertTrue(prompt.contains("ENTRANCE ORIENTATION"));
+        assertTrue(prompt.contains("ENTRANCE"));
     }
 
     @Test

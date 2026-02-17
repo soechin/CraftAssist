@@ -206,8 +206,26 @@ public class BuildStructureRotator {
                 if (to != null && to.length == 3) {
                     region.setTo(rotateCW90Coord(to, maxZ));
                 }
-                if (region.getFacing() != null) {
+                // 旋轉 properties（優先）或 facing
+                if (region.getProperties() != null && !region.getProperties().isEmpty()) {
+                    rotateProperties(region.getProperties(), 1);
+                } else if (region.getFacing() != null) {
                     region.setFacing(rotateFacingCW(region.getFacing(), 1));
+                }
+                // 旋轉 exclude 座標
+                List<int[][]> excludeList = region.getExclude();
+                if (excludeList != null && !excludeList.isEmpty()) {
+                    List<int[][]> rotated = new java.util.ArrayList<>();
+                    for (int[][] ex : excludeList) {
+                        if (ex != null && ex.length == 2) {
+                            int[] p0 = (ex[0] != null && ex[0].length == 3) ? rotateCW90Coord(ex[0], maxZ) : ex[0];
+                            int[] p1 = (ex[1] != null && ex[1].length == 3) ? rotateCW90Coord(ex[1], maxZ) : ex[1];
+                            rotated.add(new int[][]{p0, p1});
+                        } else {
+                            rotated.add(ex);
+                        }
+                    }
+                    region.setExclude(rotated);
                 }
             }
         }
