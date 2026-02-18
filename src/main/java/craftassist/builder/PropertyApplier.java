@@ -4,6 +4,7 @@ import craftassist.CraftAssistMod;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.*;
+import net.minecraft.world.level.block.state.properties.BedPart;
 
 import java.util.Map;
 
@@ -53,6 +54,8 @@ public class PropertyApplier {
                 case "hinge" -> applyHingeProperty(state, value);
                 case "axis" -> applyAxisProperty(state, value);
                 case "shape" -> applyStairShapeProperty(state, value);
+                case "hanging" -> applyBooleanProperty(state, BlockStateProperties.HANGING, value);
+                case "part" -> applyBedPartProperty(state, value);
                 default -> state;
             };
         } catch (Exception e) {
@@ -140,6 +143,14 @@ public class PropertyApplier {
                 default -> StairsShape.STRAIGHT;
             };
             return state.setValue(BlockStateProperties.STAIRS_SHAPE, shape);
+        }
+        return state;
+    }
+
+    private static BlockState applyBedPartProperty(BlockState state, String value) {
+        if (state.hasProperty(BlockStateProperties.BED_PART)) {
+            BedPart part = value.equalsIgnoreCase("head") ? BedPart.HEAD : BedPart.FOOT;
+            return state.setValue(BlockStateProperties.BED_PART, part);
         }
         return state;
     }

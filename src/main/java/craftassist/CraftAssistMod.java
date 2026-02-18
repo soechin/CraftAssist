@@ -1,5 +1,7 @@
 package craftassist;
 
+import craftassist.api.OpenRouterClient;
+import craftassist.api.RateLimiter;
 import craftassist.builder.BatchPlacementManager;
 import craftassist.builder.WaitingAnimationManager;
 import craftassist.command.CraftAssistCommand;
@@ -22,11 +24,13 @@ public class CraftAssistMod implements ModInitializer {
         BatchPlacementManager.init();
         WaitingAnimationManager.init();
         UndoManager.init();
+        RateLimiter.init();
 
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             LOGGER.info("[CraftAssist] 伺服器關閉中，清理資源...");
             BatchPlacementManager.shutdown();
             WaitingAnimationManager.shutdown();
+            OpenRouterClient.shutdown();
         });
 
         LOGGER.info("[CraftAssist] 模組已載入");

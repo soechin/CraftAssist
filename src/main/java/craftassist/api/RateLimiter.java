@@ -1,6 +1,7 @@
 package craftassist.api;
 
 import craftassist.config.ConfigManager;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 
 import java.util.Map;
 import java.util.UUID;
@@ -9,6 +10,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RateLimiter {
 
     private static final Map<UUID, TokenBucket> buckets = new ConcurrentHashMap<>();
+
+    public static void init() {
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+            cleanup(handler.getPlayer().getUUID());
+        });
+    }
 
     public static boolean tryConsume(UUID playerUuid) {
         TokenBucket bucket = buckets.computeIfAbsent(playerUuid, k -> {
@@ -22,7 +29,7 @@ public class RateLimiter {
         buckets.remove(playerUuid);
     }
 
-    private static class TokenBucket {
+    static class TokenBucket {
         private final int capacity;
         private final long refillIntervalNanos;
         private int tokens;

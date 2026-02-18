@@ -1,13 +1,17 @@
 package craftassist.command;
 
+import craftassist.CraftAssistMod;
 import craftassist.api.ApiException;
 import craftassist.api.OpenRouterClient;
 import craftassist.api.RateLimiter;
 import craftassist.builder.BatchPlacementManager;
 import craftassist.builder.BlockPlacementEngine;
+import craftassist.builder.BuildStructure;
 import craftassist.builder.BuildStructureRotator;
+import craftassist.builder.BuildStructureValidator;
 import craftassist.builder.BuildingOffsetCalculator;
 import craftassist.builder.WaitingAnimationManager;
+import com.google.gson.Gson;
 import craftassist.config.ConfigManager;
 import craftassist.config.ModConfig;
 import craftassist.util.MessageUtil;
@@ -24,6 +28,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 public class BuildCommand {
 
@@ -75,6 +80,24 @@ public class BuildCommand {
 
                     // 第二階段：完整建築生成
                     return OpenRouterClient.generateBuilding(blueprint, config);
+                })
+                .thenCompose(structure -> {
+                    if (structure == null) {
+                        return CompletableFuture.completedFuture((BuildStructure) null);
+                    }
+                    // 驗證建築結構
+                    BuildStructureValidator.ValidationResult result =
+                            BuildStructureValidator.validate(structure, config);
+                    if (!result.hasIssues()) {
+                        return CompletableFuture.completedFuture(structure);
+                    }
+                    // 有問題：更新進度並呼叫修正
+                    CraftAssistMod.LOGGER.warn("[CraftAssist] 建築驗證發現問題，嘗試修正：\n{}",
+                            result.getReport());
+                    server.execute(() ->
+                            WaitingAnimationManager.updateStage(playerUuid, "階段 3/3：驗證修正"));
+                    String originalJson = new Gson().toJson(structure);
+                    return OpenRouterClient.fixBuilding(originalJson, result.getReport(), config);
                 })
                 .thenAccept(structure -> {
                     server.execute(() -> {

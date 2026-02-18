@@ -41,6 +41,20 @@ public class OpenRouterClient {
     }
 
     /**
+     * 第三階段（選用）：修正驗證失敗的建築 JSON
+     */
+    public static CompletableFuture<BuildStructure> fixBuilding(
+            String originalJson, String issuesReport, ModConfig config) {
+        String systemPrompt = PromptBuilder.buildFixPrompt(originalJson, issuesReport);
+        String userPrompt = "Fix the reported issues and output the corrected complete JSON.";
+
+        CraftAssistMod.LOGGER.debug("[CraftAssist] 修正階段 API 請求 | 模型: {}", config.getModel());
+
+        return sendRequestWithRetry(systemPrompt, userPrompt, config, true, "修正階段", 0)
+                .thenApply(body -> parseBuildResponse(body, "修正階段"));
+    }
+
+    /**
      * 第二階段：完整建築生成（回傳建築 JSON）
      */
     public static CompletableFuture<BuildStructure> generateBuilding(String blueprint, ModConfig config) {
@@ -187,6 +201,10 @@ public class OpenRouterClient {
             CraftAssistMod.LOGGER.error("[CraftAssist] {} 無法解析建築 JSON", stage, e);
             throw new ApiException(ApiException.Type.PARSE_ERROR, e);
         }
+    }
+
+    public static void shutdown() {
+        HTTP_CLIENT.close();
     }
 
     private static Throwable unwrapCause(Throwable ex) {

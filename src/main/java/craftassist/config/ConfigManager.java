@@ -20,7 +20,7 @@ public class ConfigManager {
             try {
                 String json = Files.readString(configPath);
                 config = GSON.fromJson(json, ModConfig.class);
-                if (validateAndFix()) {
+                if (validateAndFix(config)) {
                     save();
                 }
                 CraftAssistMod.LOGGER.info("[CraftAssist] 配置已載入");
@@ -34,24 +34,54 @@ public class ConfigManager {
         }
     }
 
-    private static boolean validateAndFix() {
+    static boolean validateAndFix(ModConfig cfg) {
         boolean fixed = false;
 
-        if (config.getBlocksPerTick() <= 0) {
-            CraftAssistMod.LOGGER.warn("[CraftAssist] blocksPerTick 無效 ({})，已重設為 500", config.getBlocksPerTick());
-            config.setBlocksPerTick(500);
+        if (cfg.getBlocksPerTick() <= 0) {
+            CraftAssistMod.LOGGER.warn("[CraftAssist] blocksPerTick 無效 ({})，已重設為 500", cfg.getBlocksPerTick());
+            cfg.setBlocksPerTick(500);
             fixed = true;
         }
 
-        if (config.getMaxBlocks() > 1_000_000) {
-            CraftAssistMod.LOGGER.warn("[CraftAssist] maxBlocks 過高 ({})，已限制為 1,000,000", config.getMaxBlocks());
-            config.setMaxBlocks(1_000_000);
+        if (cfg.getMaxBlocks() > 1_000_000) {
+            CraftAssistMod.LOGGER.warn("[CraftAssist] maxBlocks 過高 ({})，已限制為 1,000,000", cfg.getMaxBlocks());
+            cfg.setMaxBlocks(1_000_000);
             fixed = true;
         }
 
-        if (config.getTimeoutSeconds() < 10 || config.getTimeoutSeconds() > 300) {
-            CraftAssistMod.LOGGER.warn("[CraftAssist] timeoutSeconds 無效 ({})，已重設為 60", config.getTimeoutSeconds());
-            config.setTimeoutSeconds(60);
+        if (cfg.getTimeoutSeconds() < 10 || cfg.getTimeoutSeconds() > 300) {
+            CraftAssistMod.LOGGER.warn("[CraftAssist] timeoutSeconds 無效 ({})，已重設為 60", cfg.getTimeoutSeconds());
+            cfg.setTimeoutSeconds(60);
+            fixed = true;
+        }
+
+        if (cfg.getMaxRegionVolume() <= 0 || cfg.getMaxRegionVolume() > 1_000_000) {
+            CraftAssistMod.LOGGER.warn("[CraftAssist] maxRegionVolume 無效 ({})，已重設為 100,000", cfg.getMaxRegionVolume());
+            cfg.setMaxRegionVolume(100_000);
+            fixed = true;
+        }
+
+        if (cfg.getMaxCoordinate() <= 0 || cfg.getMaxCoordinate() > 1_000) {
+            CraftAssistMod.LOGGER.warn("[CraftAssist] maxCoordinate 無效 ({})，已重設為 200", cfg.getMaxCoordinate());
+            cfg.setMaxCoordinate(200);
+            fixed = true;
+        }
+
+        if (cfg.getRateLimitTokens() <= 0) {
+            CraftAssistMod.LOGGER.warn("[CraftAssist] rateLimitTokens 無效 ({})，已重設為 3", cfg.getRateLimitTokens());
+            cfg.setRateLimitTokens(3);
+            fixed = true;
+        }
+
+        if (cfg.getRateLimitRefillSeconds() <= 0 || cfg.getRateLimitRefillSeconds() > 3600) {
+            CraftAssistMod.LOGGER.warn("[CraftAssist] rateLimitRefillSeconds 無效 ({})，已重設為 60", cfg.getRateLimitRefillSeconds());
+            cfg.setRateLimitRefillSeconds(60);
+            fixed = true;
+        }
+
+        if (cfg.getMaxRetries() < 0 || cfg.getMaxRetries() > 10) {
+            CraftAssistMod.LOGGER.warn("[CraftAssist] maxRetries 無效 ({})，已重設為 2", cfg.getMaxRetries());
+            cfg.setMaxRetries(2);
             fixed = true;
         }
 
